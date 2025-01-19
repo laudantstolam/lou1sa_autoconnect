@@ -11,6 +11,18 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt
 
 
+def get_resource_path(relative_path):
+    """獲取資源文件的絕對路徑"""
+    if hasattr(sys, '_MEIPASS'):
+        # PyInstaller 創建臨時文件夾 _MEIPASS
+        base_path = sys._MEIPASS
+    else:
+        # 正常情況下使用當前文件夾
+        base_path = os.path.abspath(".")
+    
+    return os.path.join(base_path, relative_path)
+
+
 class StoreSearchApp(QWidget):
     def __init__(self):
         super().__init__()
@@ -67,8 +79,9 @@ class StoreSearchApp(QWidget):
         self.current_setting_index = 0
         self.preferences = []
         try:
-            # 讀取 settings.json
-            with open("settings.json", "r", encoding="utf-8") as f:
+            # 使用 get_resource_path 讀取 settings.json
+            settings_path = get_resource_path("settings.json")
+            with open(settings_path, "r", encoding="utf-8") as f:
                 settings = json.load(f)
                 self.preferences = settings.get("preference", [])
         except Exception as e:
@@ -76,8 +89,9 @@ class StoreSearchApp(QWidget):
 
         self.store_list = []
         try:
-            # 讀取 data.csv
-            with open("data.csv", mode='r', encoding='utf-8-sig') as f:
+            # 使用 get_resource_path 讀取 data.csv
+            data_path = get_resource_path("data.csv")
+            with open(data_path, mode='r', encoding='utf-8-sig') as f:
                 reader = csv.DictReader(f)
                 self.store_list = [row for row in reader]
                 # 檢查讀取的欄位名稱
