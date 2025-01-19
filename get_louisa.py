@@ -1,7 +1,7 @@
 import sys
 import json
 import subprocess
-import pandas as pd
+import csv
 import tempfile
 import os
 from PyQt5.QtWidgets import (
@@ -74,12 +74,16 @@ class StoreSearchApp(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "錯誤", f"無法讀取 settings.json 文件: {e}")
 
+        self.store_list = []
         try:
-            self.df = pd.read_csv("data.csv")
-            self.store_list = self.df[["門市名稱", "地址", "電話"]].fillna("")
+            # 讀取 data.csv
+            with open("data.csv", mode='r', encoding='utf-8-sig') as f:
+                reader = csv.DictReader(f)
+                self.store_list = [row for row in reader]
+                # 檢查讀取的欄位名稱
+                print("CSV欄位名稱:", reader.fieldnames)
         except Exception as e:
             QMessageBox.critical(self, "錯誤", f"無法讀取 CSV 檔案: {e}")
-            self.store_list = pd.DataFrame(columns=["門市名稱", "地址", "電話"])
 
         self.update_setting_display()
         self.update_dropdown()
@@ -95,9 +99,9 @@ class StoreSearchApp(QWidget):
             store_name = current_preference["name"]
 
             # 查找對應電話號碼
-            matched_store = self.df[self.df["門市名稱"] == store_name]
-            if not matched_store.empty:
-                phone = matched_store["電話"].iloc[0]
+            matched_store = next((store for store in self.store_list if store["門市名稱"] == store_name), None)
+            if matched_store:
+                phone = matched_store["電話"]
             else:
                 phone = "未找到電話號碼"
 
@@ -114,16 +118,16 @@ class StoreSearchApp(QWidget):
     def update_dropdown(self):
         search_text = self.search_field.text().strip().lower()
         if search_text:
-            filtered_stores = self.store_list[
-                self.store_list["門市名稱"].str.contains(search_text, case=False, na=False) |
-                self.store_list["地址"].str.contains(search_text, case=False, na=False)
+            filtered_stores = [
+                store for store in self.store_list
+                if search_text in store["門市名稱"].lower() or search_text in store["地址"].lower()
             ]
         else:
             filtered_stores = self.store_list
 
         self.dropdown.clear()
-        for _, row in filtered_stores.iterrows():
-            display_text = f"{row['門市名稱']} ({row['地址']})"
+        for store in filtered_stores:
+            display_text = f"{store['門市名稱']} ({store['地址']})"
             self.dropdown.addItem(display_text)
 
     def confirm_selection(self):
@@ -132,18 +136,15 @@ class StoreSearchApp(QWidget):
             # 取得選擇的門市名稱
             store_name = selected_store.split(" (")[0]
             # 查找對應的電話號碼
-            matched_store = self.df[self.df["門市名稱"] == store_name]
-            if not matched_store.empty:
-                phone = matched_store["電話"].iloc[0].replace("-", "")           
+            matched_store = next((store for store in self.store_list if store["門市名稱"] == store_name), None)
+            if matched_store:
+                phone = matched_store["電話"].replace("-", "")           
                 # WIFI邏輯
                 if len(phone) == 10:
-                ### 雙北通常是末八碼
                     new_password = phone[-8:]
                 elif len(phone) == 9:
-                ### 桃園新竹等只有九碼的會是末九碼
                     new_password = phone[-9:]
                 else:
-                ### 台積電門市等請自己加油
                     new_password = None
 
                 # 呼叫更新 Wi-Fi 密碼的函數
