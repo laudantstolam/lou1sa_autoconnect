@@ -30,6 +30,12 @@ python搞下去或是用packed/Lo*isaPro.exe執行
 ### SOMETHING I USED : D
 `pyreq .` 生成requirements.txt
 
-`pyinstaller --onefile --windowed --add-data "settings.json;." --add-data "data.csv;." get_louisa.py` 打包exe的指令
+`pyinstaller --onefile --windowed --noconsole --icon=loui.ico --add-data "settings.json;." --add-data "data.csv;." get_louisa.py` 打包exe的指令
 
-- 打包的時候注意一下環境不要有pendas不然會包不起來(包太大)
+- 打包的時候注意一下環境不要有pendas不然會包不起來(它引用了太多東西，遞迴深度很深)
+
+#### 資料清洗
+先抓了露*莎的網頁門市資料然後抓出東西變成csv(`query/01_csv_dump.py`)
+目前有:門市名稱,電話,經緯度座標,地址,營業時間,開始時間,結束時間
+有些經緯度沒有抓到就用google geography API抓(`query/02_fill_lating.py`)
+最後的`02_update.csv`其實就是`data.csv`
