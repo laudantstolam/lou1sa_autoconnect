@@ -14,12 +14,9 @@ from PyQt5.QtCore import Qt
 def get_resource_path(relative_path):
     """獲取資源文件的絕對路徑"""
     if hasattr(sys, '_MEIPASS'):
-        # PyInstaller 創建臨時文件夾 _MEIPASS
         base_path = sys._MEIPASS
     else:
-        # 正常情況下使用當前文件夾
         base_path = os.path.abspath(".")
-    
     return os.path.join(base_path, relative_path)
 
 
@@ -27,7 +24,7 @@ class StoreSearchApp(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle("門市查詢系統")
+        self.setWindowTitle("LouisaPro")
         self.setGeometry(200, 200, 400, 300)
 
         # 主佈局
@@ -64,9 +61,20 @@ class StoreSearchApp(QWidget):
         self.search_field.textChanged.connect(self.update_dropdown)
         layout.addWidget(self.search_field)
 
+        # 下拉選單和收藏按鈕的水平佈局
+        dropdown_layout = QHBoxLayout()
+        
         # 下拉選單
         self.dropdown = QComboBox()
-        layout.addWidget(self.dropdown)
+        dropdown_layout.addWidget(self.dropdown)
+        
+        # 收藏按鈕
+        self.favorite_button = QPushButton("☆")
+        self.favorite_button.setFixedWidth(30)
+        self.favorite_button.clicked.connect(self.toggle_favorite)
+        dropdown_layout.addWidget(self.favorite_button)
+        
+        layout.addLayout(dropdown_layout)
 
         # 確認按鈕
         confirm_button = QPushButton("確認")
@@ -78,29 +86,96 @@ class StoreSearchApp(QWidget):
         # 初始化數據
         self.current_setting_index = 0
         self.preferences = []
-        try:
-            # 使用 get_resource_path 讀取 settings.json
-            settings_path = get_resource_path("settings.json")
-            with open(settings_path, "r", encoding="utf-8") as f:
-                settings = json.load(f)
-                self.preferences = settings.get("preference", [])
-        except Exception as e:
-            QMessageBox.critical(self, "錯誤", f"無法讀取 settings.json 文件: {e}")
-
+        self.settings_path = get_resource_path("settings.json")
+        self.load_settings()
+        
         self.store_list = []
         try:
-            # 使用 get_resource_path 讀取 data.csv
             data_path = get_resource_path("data.csv")
             with open(data_path, mode='r', encoding='utf-8-sig') as f:
                 reader = csv.DictReader(f)
                 self.store_list = [row for row in reader]
-                # 檢查讀取的欄位名稱
-                print("CSV欄位名稱:", reader.fieldnames)
         except Exception as e:
-            QMessageBox.critical(self, "錯誤", f"無法讀取 CSV 檔案: {e}")
+            QMessageBox.critical(self, "錯誤", f"無法讀取資料檔案: {e}")
 
         self.update_setting_display()
         self.update_dropdown()
+        self.update_favorite_button()
+
+    def load_settings(self):
+        """載入設定檔"""
+        try:
+            with open(self.settings_path, "r", encoding="utf-8") as f:
+                settings = json.load(f)
+                self.preferences = settings.get("preference", [])
+        except Exception as e:
+            QMessageBox.critical(self, "錯誤", f"無法讀取設定文件: {e}")
+
+    def save_settings(self):
+        """儲存設定檔"""
+        try:
+            with open(self.settings_path, "r", encoding="utf-8") as f:
+                settings = json.load(f)
+            
+            settings["preference"] = self.preferences
+            
+            with open(self.settings_path, "w", encoding="utf-8") as f:
+                json.dump(settings, f, ensure_ascii=False, indent=2)
+        except Exception as e:
+            QMessageBox.critical(self, "錯誤", f"無法儲存設定文件: {e}")
+
+    def is_current_store_favorite(self):
+        """檢查目前選擇的門市是否在收藏清單中"""
+        if not self.dropdown.currentText():
+            return False
+        
+        current_store = self.dropdown.currentText().split(" (")[0]
+        return any(pref["name"] == current_store for pref in self.preferences)
+
+    def update_favorite_button(self):
+        """更新收藏按鈕的狀態"""
+        if self.is_current_store_favorite():
+            self.favorite_button.setText("★")
+        else:
+            self.favorite_button.setText("☆")
+
+    def toggle_favorite(self):
+        """切換當前選擇的門市的收藏狀態"""
+        if not self.dropdown.currentText():
+            return
+            
+        current_store = self.dropdown.currentText().split(" (")[0]
+        
+        try:
+            # 直接讀取最新的 settings.json
+            with open(self.settings_path, "r", encoding="utf-8") as f:
+                settings = json.load(f)
+            
+            # 檢查是否已在收藏清單中
+            is_favorite = any(pref["name"] == current_store for pref in settings["preference"])
+            
+            if is_favorite:
+                # 從收藏清單中移除
+                settings["preference"] = [pref for pref in settings["preference"] if pref["name"] != current_store]
+                self.preferences = settings["preference"]
+                QMessageBox.information(self, "提示", f"已將 {current_store} 從收藏清單中移除")
+            else:
+                new_preference = {"name": current_store}
+                settings["preference"].append(new_preference)
+                self.preferences = settings["preference"]
+                QMessageBox.information(self, "提示", f"已將 {current_store} 加入收藏清單")
+            
+            # 直接寫入更新後的設定
+            with open(self.settings_path, "w", encoding="utf-8") as f:
+                json.dump(settings, f, ensure_ascii=False, indent=2)
+            
+            # 更新顯示
+            self.update_setting_display()
+            self.update_favorite_button()
+            
+        except Exception as e:
+            QMessageBox.critical(self, "錯誤", f"無法更新收藏設定: {e}")
+            return
 
     def change_setting(self, direction):
         self.current_setting_index = (self.current_setting_index + direction) % len(self.preferences)
@@ -112,19 +187,17 @@ class StoreSearchApp(QWidget):
             current_preference = self.preferences[self.current_setting_index]
             store_name = current_preference["name"]
 
-            # 查找對應電話號碼
             matched_store = next((store for store in self.store_list if store["門市名稱"] == store_name), None)
             if matched_store:
-                phone = matched_store["電話"]
+                addr = matched_store["地址"]
             else:
-                phone = "未找到電話號碼"
+                addr = "未找到地址"
 
-            self.setting_label.setText(f"{store_name} - {phone}")
+            self.setting_label.setText(f"<{store_name}>\n{addr}")
         else:
-            self.setting_label.setText("無偏好設定")
+            self.setting_label.setText("尚未加入任何門市")
 
     def sync_search_with_preference(self):
-        """將偏好設定同步到搜尋框並更新選項。"""
         if self.preferences:
             current_preference = self.preferences[self.current_setting_index]
             self.search_field.setText(current_preference["name"])
@@ -139,21 +212,26 @@ class StoreSearchApp(QWidget):
         else:
             filtered_stores = self.store_list
 
+        current_text = self.dropdown.currentText()
         self.dropdown.clear()
         for store in filtered_stores:
             display_text = f"{store['門市名稱']} ({store['地址']})"
             self.dropdown.addItem(display_text)
+            
+        # 保持選擇狀態
+        index = self.dropdown.findText(current_text)
+        if index >= 0:
+            self.dropdown.setCurrentIndex(index)
+            
+        self.update_favorite_button()
 
     def confirm_selection(self):
         selected_store = self.dropdown.currentText()
         if selected_store:
-            # 取得選擇的門市名稱
             store_name = selected_store.split(" (")[0]
-            # 查找對應的電話號碼
             matched_store = next((store for store in self.store_list if store["門市名稱"] == store_name), None)
             if matched_store:
                 phone = matched_store["電話"].replace("-", "")           
-                # WIFI邏輯
                 if len(phone) == 10:
                     new_password = phone[-8:]
                 elif len(phone) == 9:
@@ -161,7 +239,6 @@ class StoreSearchApp(QWidget):
                 else:
                     new_password = None
 
-                # 呼叫更新 Wi-Fi 密碼的函數
                 self.update_wifi_password("LouisaCoffee", new_password)
             else:
                 QMessageBox.warning(self, "提示", f"未找到 {store_name} 的電話號碼")
@@ -170,10 +247,8 @@ class StoreSearchApp(QWidget):
 
     def update_wifi_password(self, network_name, new_password):
         try:
-            # First remove the existing profile
             subprocess.run(['netsh', 'wlan', 'delete', 'profile', network_name], check=True)
             
-            # Create XML template for the new profile
             profile_template = f"""<?xml version="1.0"?>
 <WLANProfile xmlns="http://www.microsoft.com/networking/WLAN/profile/v1">
     <name>{network_name}</name>
@@ -200,18 +275,15 @@ class StoreSearchApp(QWidget):
     </MSM>
 </WLANProfile>"""
 
-            # Create a temporary file that will be automatically deleted
             with tempfile.NamedTemporaryFile(mode='w', suffix='.xml', delete=False) as temp_file:
                 temp_filename = temp_file.name
                 temp_file.write(profile_template)
             
             try:
-                # Add the new profile using the temporary file
                 subprocess.run(['netsh', 'wlan', 'add', 'profile', f'filename="{temp_filename}"'], check=True)
                 QMessageBox.information(self, "真是個成功的密碼小偷", f"目前Louisa的密碼為{new_password}")
                 print(f"Successfully updated password for network: {network_name}")
             finally:
-                # Make sure to remove the temporary file even if an error occurs
                 try:
                     os.unlink(temp_filename)
                 except Exception as e:
