@@ -91,7 +91,7 @@ class StoreSearchApp(QWidget):
         
         self.store_list = []
         try:
-            data_path = get_resource_path("data.csv")
+            data_path = get_resource_path("query_data/data.csv")
             with open(data_path, mode='r', encoding='utf-8-sig') as f:
                 reader = csv.DictReader(f)
                 self.store_list = [row for row in reader]

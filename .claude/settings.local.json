@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__navigate_page",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__evaluate_script",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__list_network_requests",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__get_network_request",
+      "Bash(cd \"C:\\\\Users\\\\rache\\\\Desktop\\\\code\\\\python\\\\Louisa_pro\\\\query_data\" && uv run --with requests,beautifulsoup4,pandas python 03_scrape_all.py)",
+      "Bash(cd \"C:\\\\Users\\\\rache\\\\Desktop\\\\code\\\\python\\\\Louisa_pro\\\\query_data\" && python -c \"import pandas as pd; df = pd.read_csv\\('03_all_stores.csv', encoding='utf-8-sig'\\); print\\(df.head\\(5\\).to_string\\(\\)\\); print\\(f'\\\\nTotal: {len\\(df\\)}'\\)\")",
+      "Bash(cd \"C:\\\\Users\\\\rache\\\\Desktop\\\\code\\\\python\\\\Louisa_pro\" && python -c \"\nimport pandas as pd\ndf = pd.read_csv\\('query_data/03_all_stores.csv', encoding='utf-8-sig'\\)\nmissing = df[df['經緯度座標'].isna\\(\\) | \\(df['經緯度座標'] == ''\\) | \\(df['經緯度座標'] == '0.00,0.00'\\)]\nprint\\(f'Total: {len\\(df\\)}'\\)\nprint\\(f'Missing coords: {len\\(missing\\)}'\\)\nprint\\(missing[['縣市','門市名稱','地址']].to_string\\(\\)\\)\n\")",
+      "Bash(cd \"C:\\\\Users\\\\rache\\\\Desktop\\\\code\\\\python\\\\Louisa_pro\" && uv run --with requests,python-dotenv python query_data/02_fill_latlng.py)",
+      "Bash(cd \"C:\\\\Users\\\\rache\\\\Desktop\\\\code\\\\python\\\\Louisa_pro\" && uv run --with requests,python-dotenv python query_data/02_fill_latlng.py 2>&1)",
+      "Bash(cd \"C:\\\\Users\\\\rache\\\\Desktop\\\\code\\\\python\\\\Louisa_pro\" && python -c \"\nimport requests, os\nfrom dotenv import load_dotenv\nload_dotenv\\(\\)\napi_key = os.getenv\\('GOOGLE_API_KEY'\\)\naddress = '基隆市 中正區  信一路168號1樓'\nr = requests.get\\('https://maps.googleapis.com/maps/api/geocode/json', params={'address': address, 'key': api_key}\\)\nimport json\ndata = r.json\\(\\)\nprint\\('status:', data['status']\\)\nif data['results']:\n    loc = data['results'][0]['geometry']['location']\n    print\\('lat/lng:', loc\\)\n\")"
+    ]
+  }
+}
