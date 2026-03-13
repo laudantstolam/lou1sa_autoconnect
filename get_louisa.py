@@ -20,6 +20,20 @@ def get_resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 
+def get_writable_path(filename):
+    """Return a writable path next to the exe (or cwd in dev mode)."""
+    if hasattr(sys, '_MEIPASS'):
+        base_path = os.path.dirname(sys.executable)
+    else:
+        base_path = os.path.abspath(".")
+    path = os.path.join(base_path, filename)
+    if filename == "settings.json" and not os.path.exists(path):
+        with open(path, "w", encoding="utf-8") as f:
+            import json
+            json.dump({"preference": []}, f)
+    return path
+
+
 class StoreSearchApp(QWidget):
     def __init__(self):
         super().__init__()
@@ -86,7 +100,7 @@ class StoreSearchApp(QWidget):
         # 初始化數據
         self.current_setting_index = 0
         self.preferences = []
-        self.settings_path = get_resource_path("settings.json")
+        self.settings_path = get_writable_path("settings.json")
         self.load_settings()
         
         self.store_list = []
