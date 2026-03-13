@@ -14,10 +14,12 @@
 `V2.0` 2026.03.13 更新店鋪與UI
 
 ### Interface
-舊版:
+#### 舊版:
+
 ![](https://raw.githubusercontent.com/Ash0645/image_remote/main/20260313130515.png)
 
-新版:
+#### 新版:
+
 ![](https://raw.githubusercontent.com/Ash0645/image_remote/main/20260313130856.png)
 
 ### Manual Confirmation
