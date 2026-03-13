@@ -80,15 +80,23 @@ class StoreSearchApp(QWidget):
         
         # 下拉選單
         self.dropdown = QComboBox()
+        self.dropdown.currentIndexChanged.connect(self.update_hours_display)
         dropdown_layout.addWidget(self.dropdown)
-        
+
         # 收藏按鈕
         self.favorite_button = QPushButton("☆")
         self.favorite_button.setFixedWidth(30)
         self.favorite_button.clicked.connect(self.toggle_favorite)
         dropdown_layout.addWidget(self.favorite_button)
-        
+
         layout.addLayout(dropdown_layout)
+
+        # 營業時間顯示
+        self.hours_label = QLabel("")
+        self.hours_label.setAlignment(Qt.AlignCenter)
+        self.hours_label.setStyleSheet("font-size: 12px; color: #555;")
+        self.hours_label.hide()
+        layout.addWidget(self.hours_label)
 
         # 確認按鈕
         confirm_button = QPushButton("確認")
@@ -115,6 +123,7 @@ class StoreSearchApp(QWidget):
         self.update_setting_display()
         self.update_dropdown()
         self.update_favorite_button()
+        self.update_hours_display()
 
     def load_settings(self):
         """載入設定檔"""
@@ -202,14 +211,28 @@ class StoreSearchApp(QWidget):
             store_name = current_preference["name"]
 
             matched_store = next((store for store in self.store_list if store["門市名稱"] == store_name), None)
-            if matched_store:
-                addr = matched_store["地址"]
-            else:
-                addr = "未找到地址"
+            addr = matched_store["地址"] if matched_store else "未找到地址"
+            hours = matched_store.get("營業時間", "").strip() if matched_store else ""
 
-            self.setting_label.setText(f"<{store_name}>\n{addr}")
+            text = f"<{store_name}>\n{addr}"
+            if hours:
+                text += f"\n🕐 {hours}"
+            self.setting_label.setText(text)
         else:
             self.setting_label.setText("尚未加入任何門市")
+
+    def update_hours_display(self):
+        current = self.dropdown.currentText()
+        if current:
+            store_name = current.split(" (")[0]
+            matched = next((s for s in self.store_list if s["門市名稱"] == store_name), None)
+            if matched:
+                hours = matched.get("營業時間", "").strip()
+                if hours:
+                    self.hours_label.setText(f"🕐  {hours}")
+                    self.hours_label.show()
+                    return
+        self.hours_label.hide()
 
     def sync_search_with_preference(self):
         if self.preferences:

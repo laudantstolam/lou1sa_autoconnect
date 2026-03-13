@@ -112,6 +112,11 @@ QLabel#carouselEmpty {{
     background-color: transparent;
     qproperty-alignment: AlignCenter;
 }}
+QLabel#carouselHours {{
+    font-size: 11px;
+    color: {ACCENT};
+    background-color: transparent;
+}}
 QLabel#carouselCounter {{
     font-size: 10px;
     color: {MUTED};
@@ -248,6 +253,14 @@ QPushButton#starBtn[active="true"] {{
     border-color: {ACCENT};
 }}
 
+/* ── Hours label ──────────────────────────────────────────────────────── */
+QLabel#hoursLabel {{
+    font-size: 12px;
+    color: {ACCENT};
+    background-color: transparent;
+    padding: 2px 0px;
+}}
+
 /* ── Confirm button ───────────────────────────────────────────────────── */
 QPushButton#confirmBtn {{
     background-color: {ACCENT};
@@ -380,7 +393,7 @@ class StoreSearchApp(QWidget):
         app_title.setObjectName("appTitle")
         title_col.addWidget(app_title)
 
-        app_subtitle = QLabel("路易莎 WiFi 密碼工具  ·  powered by @laudantstolam")
+        app_subtitle = QLabel("Lou1sa Password Pro  ·  powered by @laudantstolam")
         app_subtitle.setObjectName("appSubtitle")
         title_col.addWidget(app_subtitle)
 
@@ -408,7 +421,7 @@ class StoreSearchApp(QWidget):
         self.carousel_card = QFrame()
         self.carousel_card.setObjectName("carouselCard")
         self.carousel_card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.carousel_card.setFixedHeight(80)
+        self.carousel_card.setFixedHeight(98)
         card_inner = QVBoxLayout(self.carousel_card)
         card_inner.setContentsMargins(14, 10, 14, 10)
         card_inner.setSpacing(3)
@@ -433,6 +446,12 @@ class StoreSearchApp(QWidget):
         self.carousel_address.setWordWrap(True)
         self.carousel_address.hide()
         card_inner.addWidget(self.carousel_address)
+
+        self.carousel_hours = QLabel("")
+        self.carousel_hours.setObjectName("carouselHours")
+        self.carousel_hours.setAlignment(Qt.AlignCenter)
+        self.carousel_hours.hide()
+        card_inner.addWidget(self.carousel_hours)
 
         self.carousel_counter = QLabel("")
         self.carousel_counter.setObjectName("carouselCounter")
@@ -482,6 +501,13 @@ class StoreSearchApp(QWidget):
         dd_row.addWidget(self.favorite_button)
 
         root.addLayout(dd_row)
+
+        # ── Hours info ──────────────────────────────────────────────────────
+        self.hours_label = QLabel("")
+        self.hours_label.setObjectName("hoursLabel")
+        self.hours_label.setAlignment(Qt.AlignCenter)
+        self.hours_label.hide()
+        root.addWidget(self.hours_label)
 
         # ── Confirm ─────────────────────────────────────────────────────────
         self.confirm_btn = QPushButton("套用 WiFi 密碼")
@@ -563,6 +589,19 @@ class StoreSearchApp(QWidget):
         self.favorite_button.style().unpolish(self.favorite_button)
         self.favorite_button.style().polish(self.favorite_button)
 
+        # Update hours display
+        current = self.dropdown.currentText()
+        if current:
+            store_name = current.split(" (")[0]
+            matched = next((s for s in self.store_list if s["門市名稱"] == store_name), None)
+            if matched:
+                hours = matched.get("營業時間", "").strip()
+                if hours:
+                    self.hours_label.setText(f"🕐  {hours}")
+                    self.hours_label.show()
+                    return
+        self.hours_label.hide()
+
     def toggle_favorite(self):
         if not self.dropdown.currentText():
             return
@@ -615,6 +654,12 @@ class StoreSearchApp(QWidget):
             self.carousel_store_name.show()
             self.carousel_address.setText(addr)
             self.carousel_address.show()
+            hours = matched.get("營業時間", "").strip() if matched else ""
+            if hours:
+                self.carousel_hours.setText(f"🕐  {hours}")
+                self.carousel_hours.show()
+            else:
+                self.carousel_hours.hide()
             self.carousel_counter.setText(f"{self.current_setting_index + 1} / {total}")
             self.carousel_counter.show()
 
@@ -625,6 +670,7 @@ class StoreSearchApp(QWidget):
             self.carousel_empty.show()
             self.carousel_store_name.hide()
             self.carousel_address.hide()
+            self.carousel_hours.hide()
             self.carousel_counter.hide()
             self.left_button.setEnabled(False)
             self.right_button.setEnabled(False)
